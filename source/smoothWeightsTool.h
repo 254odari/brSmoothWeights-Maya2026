@@ -13,8 +13,6 @@
 
 #include <iostream>
 #include <vector>
-#include <tbb/parallel_for.h>
-#include <tbb/blocked_range.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MArgList.h>
@@ -25,16 +23,22 @@
 #include <maya/MSyntax.h>
 
 #include <maya/M3dView.h>
+#include <maya/MColor.h>
 #include <maya/MCursor.h>
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MDoubleArray.h>
 #include <maya/MEvent.h>
+#include <maya/MFloatArray.h>
 #include <maya/MFloatPointArray.h>
 #include <maya/MFnCamera.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MFrameContext.h>
+#include <maya/MIntArray.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MItMeshEdge.h>
 #include <maya/MItMeshPolygon.h>
@@ -42,6 +46,7 @@
 #include <maya/MItSelectionList.h>
 #include <maya/MMatrix.h>
 #include <maya/MMeshIntersector.h>
+#include <maya/MPlug.h>
 #include <maya/MPointArray.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>

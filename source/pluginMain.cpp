@@ -29,16 +29,30 @@ MStatus initializePlugin(MObject obj)
     status = plugin.registerContextCommand("brSmoothWeightsContext",
                                            smoothWeightsContextCmd::creator,
                                            "brSmoothWeightsCmd",
-                                           smoothWeightsTool::creator);
+                                           smoothWeightsTool::creator,
+                                           smoothWeightsTool::newSyntax);
     if (status != MStatus::kSuccess)
+    {
         status.perror("Register brSmoothWeightsContext failed.");
+        return status;
+    }
 
     status = plugin.registerContextCommand("brTransferWeightsContext",
                                            transferWeightsContextCmd::creator,
                                            "brTransferWeightsCmd",
-                                           transferWeightsTool::creator);
+                                           transferWeightsTool::creator,
+                                           transferWeightsTool::newSyntax);
     if (status != MStatus::kSuccess)
+    {
         status.perror("Register brTransferWeightsContext failed.");
+
+        MStatus rollbackStatus = plugin.deregisterContextCommand("brSmoothWeightsContext",
+                                                                 "brSmoothWeightsCmd");
+        if (rollbackStatus != MStatus::kSuccess)
+            rollbackStatus.perror("Rollback brSmoothWeightsContext failed.");
+
+        return status;
+    }
 
     return status;
 }
@@ -48,15 +62,18 @@ MStatus uninitializePlugin(MObject obj)
     MStatus status;
     MFnPlugin plugin(obj, "Ingo Clemens", kVERSION.c_str(), "Any");
 
-    status = plugin.deregisterContextCommand("brSmoothWeightsContext",
-                                             "brSmoothWeightsCmd");
-    if (status != MStatus::kSuccess)
-        status.perror("Deregister brSmoothWeightsContext failed.");
-
     status = plugin.deregisterContextCommand("brTransferWeightsContext",
                                              "brTransferWeightsCmd");
     if (status != MStatus::kSuccess)
         status.perror("Deregister brTransferWeightsContext failed.");
+
+    MStatus smoothStatus = plugin.deregisterContextCommand("brSmoothWeightsContext",
+                                                            "brSmoothWeightsCmd");
+    if (smoothStatus != MStatus::kSuccess)
+        smoothStatus.perror("Deregister brSmoothWeightsContext failed.");
+
+    if (status == MStatus::kSuccess)
+        status = smoothStatus;
 
     return status;
 }

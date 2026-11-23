@@ -10,6 +10,11 @@
 
 #include "smoothWeightsTool.h"
 
+#include <cmath>
+#include <cstdio>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+
 // Macro for the press/drag/release methods in case there is nothing
 // selected or the tool gets applied outside any geometry. If the actual
 // MStatus would get returned an error can get listed in terminal on
@@ -1487,7 +1492,7 @@ MStatus smoothWeightsContext::getAllWeights()
 
     MFnSkinCluster skinFn(skinObj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    skinFn.getWeights(meshDag, allVtxCompObj, currentWeights, influenceCount);
+    status = skinFn.getWeights(meshDag, allVtxCompObj, currentWeights, influenceCount);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     // Copy the current weights for undo.
     prevWeights.copy(currentWeights);
@@ -1517,15 +1522,22 @@ void smoothWeightsContext::getSkinClusterAttributes(MObject skinCluster,
 {
     // Get the settings from the skin cluster node.
     MFnDependencyNode skinMFn(skinCluster);
+    MStatus status;
 
     MPlug maxInflPlug = skinMFn.findPlug("maxInfluences", false);
-    maxInfluences = (unsigned)maxInflPlug.asInt();
+    int intValue = maxInflPlug.asInt(&status);
+    if (status == MStatus::kSuccess)
+        maxInfluences = static_cast<unsigned int>(intValue);
 
     MPlug maintainInflPlug = skinMFn.findPlug("maintainMaxInfluences", false);
-    maintainMaxInfluences = maintainInflPlug.asBool();
+    bool boolValue = maintainInflPlug.asBool(&status);
+    if (status == MStatus::kSuccess)
+        maintainMaxInfluences = boolValue;
 
     MPlug normalizePlug = skinMFn.findPlug("normalizeWeights", false);
-    normalize = (unsigned)normalizePlug.asInt();
+    intValue = normalizePlug.asInt(&status);
+    if (status == MStatus::kSuccess)
+        normalize = static_cast<unsigned int>(intValue);
 }
 
 
@@ -1580,7 +1592,12 @@ std::vector<bool> smoothWeightsContext::getInfluenceLocks(MDagPathArray dagPaths
         MFnDependencyNode influenceFn(influenceObj);
         MPlug lockPlug = influenceFn.findPlug("liw", false);
         if (!lockPlug.isNull())
-            locks[i] = lockPlug.asBool();
+        {
+            MStatus status;
+            bool locked = lockPlug.asBool(&status);
+            if (status == MStatus::kSuccess)
+                locks[i] = locked;
+        }
     }
 
     return locks;

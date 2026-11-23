@@ -10,6 +10,11 @@
 
 #include "transferWeightsTool.h"
 
+#include <cmath>
+#include <cstdio>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+
 // Macro for the press/drag/release methods in case there is nothing
 // selected or the tool gets applied outside any geometry. If the actual
 // MStatus would get returned an error can get listed in terminal on
@@ -1470,7 +1475,7 @@ MStatus transferWeightsContext::getAllWeights()
 
     MFnSkinCluster skinFn(skinObj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    skinFn.getWeights(meshDag, allVtxCompObj, currentWeights, influenceCount);
+    status = skinFn.getWeights(meshDag, allVtxCompObj, currentWeights, influenceCount);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     // Copy the current weights for undo.
     prevWeights.copy(currentWeights);
@@ -1494,9 +1499,12 @@ void transferWeightsContext::getSkinClusterAttributes(MObject skinCluster, unsig
 {
     // Get the settings from the skin cluster node.
     MFnDependencyNode skinMFn(skinCluster);
+    MStatus status;
 
     MPlug normalizePlug = skinMFn.findPlug("normalizeWeights", false);
-    normalize = (unsigned)normalizePlug.asInt();
+    int intValue = normalizePlug.asInt(&status);
+    if (status == MStatus::kSuccess)
+        normalize = static_cast<unsigned int>(intValue);
 }
 
 
@@ -1552,7 +1560,12 @@ std::vector<bool> transferWeightsContext::getInfluenceLocks(MDagPathArray dagPat
         MFnDependencyNode influenceFn(influenceObj);
         MPlug lockPlug = influenceFn.findPlug("liw", false);
         if (!lockPlug.isNull())
-            locks[i] = lockPlug.asBool();
+        {
+            MStatus status;
+            bool locked = lockPlug.asBool(&status);
+            if (status == MStatus::kSuccess)
+                locks[i] = locked;
+        }
     }
 
     return locks;

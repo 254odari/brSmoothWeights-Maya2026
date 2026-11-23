@@ -230,6 +230,7 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | --- | --- | --- |
 | Baseline import | All tracked upstream files | Imported unchanged from `bb017e67c2bf7ca03cb626cacfa2ca58b3a66bd8`. |
 | Audit | `MAYA2026_PORTING_AUDIT.md` | Added before implementation changes. |
+| Native compatibility | `source/pluginMain.cpp`, `source/smoothWeightsTool.h`, `source/smoothWeightsTool.cpp`, `source/transferWeightsTool.h`, `source/transferWeightsTool.cpp` | Added direct includes, moved private TBB includes, replaced deprecated plug reads, preserved failed-read defaults, registered tool syntax callbacks, added registration rollback and reverse-order deregistration. Numerical algorithms unchanged. |
 
 ## 13. Validation status
 
@@ -238,6 +239,7 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | Upstream repository inventory | Completed. |
 | Maya 2026 header/signature inspection | Completed against installed headers. |
 | Unchanged-source syntax compilation | Passed with MSVC 19.51; not the official VS2022 toolchain. |
+| Ported-source syntax compilation | Passed for all three translation units with MSVC 19.51 and Maya 2026 headers; link not attempted. |
 | Unchanged-source link | Blocked locally by missing `msvcprt.lib` in the incomplete VS2026 Build Tools installation. |
 | CMake configure/build | Not yet run. |
 | GitHub Actions build | Not yet run. |
