@@ -231,6 +231,7 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | Baseline import | All tracked upstream files | Imported unchanged from `bb017e67c2bf7ca03cb626cacfa2ca58b3a66bd8`. |
 | Audit | `MAYA2026_PORTING_AUDIT.md` | Added before implementation changes. |
 | Native compatibility | `source/pluginMain.cpp`, `source/smoothWeightsTool.h`, `source/smoothWeightsTool.cpp`, `source/transferWeightsTool.h`, `source/transferWeightsTool.cpp` | Added direct includes, moved private TBB includes, replaced deprecated plug reads, preserved failed-read defaults, registered tool syntax callbacks, added registration rollback and reverse-order deregistration. Numerical algorithms unchanged. |
+| Build system | `CMakeLists.txt` | Added a Windows x64 MSVC target for `brSmoothWeights.mll`, C++17, dynamic MSVC runtime, Maya 2026 SDK discovery, bundled oneTBB linkage, and module-layout install rules. |
 
 ## 13. Validation status
 
@@ -241,7 +242,9 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | Unchanged-source syntax compilation | Passed with MSVC 19.51; not the official VS2022 toolchain. |
 | Ported-source syntax compilation | Passed for all three translation units with MSVC 19.51 and Maya 2026 headers; link not attempted. |
 | Unchanged-source link | Blocked locally by missing `msvcprt.lib` in the incomplete VS2026 Build Tools installation. |
-| CMake configure/build | Not yet run. |
+| CMake configure | Passed with CMake 4.4.5, NMake, and MSVC 19.51 using static-library compiler probes; all Maya 2026 headers/libraries were found. Normal compiler probes cannot link locally because the CRT import libraries are missing. |
+| CMake compile | All three translation units compiled successfully; no `.mll` was produced. |
+| CMake link | Blocked locally by missing `msvcprt.lib` in the incomplete VS2026 Build Tools installation. |
 | GitHub Actions build | Not yet run. |
 | Plug-in load/unload in Maya 2026 | Not tested. |
 | Smoothing/transfer numerical and UI behavior | Not tested. |
