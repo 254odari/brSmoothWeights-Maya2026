@@ -9,17 +9,26 @@ Status date: 2026-11-24.
 | Upstream source and resource audit | Passed | Baseline `bb017e67c2bf7ca03cb626cacfa2ca58b3a66bd8`; see [MAYA2026_PORTING_AUDIT.md](MAYA2026_PORTING_AUDIT.md). |
 | Maya 2026 API/signature inspection | Passed | Checked against the installed Maya 2026 headers. |
 | Ported-source syntax compilation | Passed | All three translation units compiled with MSVC 19.51 and Maya 2026 headers. This is not the official VS2022 toolchain. |
-| CMake configuration | Passed with limitation | CMake 4.4.5 generated NMake build files and found every SDK component. Static-library compiler probes were necessary because the local CRT import libraries are missing. |
+| CMake configuration | Passed with limitation | CMake 4.4.5 found every SDK component. A later Ninja configuration emitted both required entry-point export flags. Static-library compiler probes were necessary locally because the CRT import libraries are missing. |
 | CMake compilation | Passed | All three translation units compiled through the generated build. |
 | Local `.mll` link | Blocked | Local VS2026 Build Tools cannot find `msvcprt.lib`. No Maya 2026 `.mll` was produced locally. |
-| Workflow YAML and PE verifier static checks | Passed | YAML parsed; the verifier accepted the upstream Maya 2025 x64 binary and rejected a non-PE file. |
-| GitHub Actions VS2022 build | Not run | Requires the workflow to be pushed and executed on GitHub. |
-| Maya 2026 load/unload and registration | Not tested | Requires a successfully linked Maya 2026 binary. |
+| GitHub Actions VS2022 build | Passed | [Run 45275333759](https://github.com/254odari/brSmoothWeights-Maya2026/actions/runs/45275333759) built commit `228227f` and uploaded the artifact. |
+| PE verification and artifact contents | Passed | The downloaded artifact contains only `brSmoothWeights.mll`; independent verification confirmed PE32+ AMD64 and both required exports. SHA-256: `f5b2494d3666f80342b2f1839fd9badb12eaaf484b2a7a403b233607e555447d`. |
+| Maya 2026 headless load/unload/reload | Passed | Autodesk Maya 2026.2 `mayapy` loaded the hosted artifact, returned valid syntax for both tool commands, unloaded, reloaded, and unloaded again. This did not exercise the GUI or painting. |
 | Smoothing, transfer, UI, and numerical behavior | Not tested | Requires interactive Maya 2026 testing. |
 
-## Test record
+## Automated smoke-test record
 
-Complete this section for each tested configuration:
+- Maya version/update: Autodesk Maya 2026.2, isolated `mayapy` process with a temporary `MAYA_APP_DIR`.
+- Binary source and commit: hosted artifact from commit `228227f`.
+- Test: direct load, loaded-path query, both tool-command syntax queries, unload, reload, and unload.
+- Test scene: none; no GUI or geometry was created.
+- Date: 2026-11-24.
+- Overall result: passed. Interactive behavior was not exercised.
+
+## Interactive test record
+
+Complete this section for each interactive tested configuration:
 
 - Maya version/update:
 - Windows version:
@@ -40,7 +49,7 @@ Complete this section for each tested configuration:
 - [ ] Confirm `brSmoothWeightsContext` and `brTransferWeightsContext` are registered.
 - [ ] Confirm `brSmoothWeightsCmd` and `brTransferWeightsCmd` are registered and their syntax/help is available.
 - [ ] Confirm the reported plug-in path is the Maya 2026 `.mll`, not an upstream 2025 binary.
-- [ ] Run `python tests/verify_mll.py <path-to-brSmoothWeights.mll>` and confirm AMD64 plus both required exports.
+- [x] Run `python tests/verify_mll.py <path-to-brSmoothWeights.mll>` and confirm AMD64 plus both required exports.
 
 Suggested Python load check:
 
@@ -136,12 +145,12 @@ Use a simple skinned grid or polygon mesh with at least two influences and known
 - [ ] Install to paths without spaces and confirm loading.
 - [ ] Install to a path with spaces and confirm loading; record any uninstall-parser limitation.
 - [ ] Confirm no Autodesk SDK files, credentials, build caches, or test artifacts are committed.
-- [ ] Confirm the GitHub Actions artifact contains only the verified `.mll`.
+- [x] Confirm the GitHub Actions artifact contains only the verified `.mll`.
 
 ## 9. Final acceptance
 
-- [ ] Hosted VS2022 build passes.
-- [ ] PE verification passes on the newly built Maya 2026 binary.
+- [x] Hosted VS2022 build passes.
+- [x] PE verification passes on the newly built Maya 2026 binary.
 - [ ] All loading and registration checks pass.
 - [ ] All smoothing and transfer checks pass.
 - [ ] Undo/redo and restart/reload checks pass.

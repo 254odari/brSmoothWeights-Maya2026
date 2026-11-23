@@ -2,6 +2,7 @@
 * Added a Windows x64 Maya 2026 CMake build and GitHub Actions workflow.
 * Added Maya 2026 module packaging, installation documentation, and a testing checklist.
 * Applied Maya 2026 API compatibility fixes without changing the smoothing or transfer algorithms.
+* Validated the hosted VS2022 build and isolated Maya 2026 load/unload/reload; interactive behavior remains unverified.
 
 **1.2.0 (2023-06-12)**
 * Added support for Maya 2024.

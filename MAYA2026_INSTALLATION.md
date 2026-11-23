@@ -53,7 +53,7 @@ The PE verifier checks that the binary is PE32+ AMD64 and exports `initializePlu
 5. Uploads only `brSmoothWeights.mll` as the `brSmoothWeights-Maya2026-win64` artifact.
 6. Removes the downloaded DevKit even when the job fails.
 
-A successful hosted run is required before the produced artifact can be marked build-validated.
+Only artifacts from successful runs should be marked build-validated. The current verified run is [45275333759](https://github.com/254odari/brSmoothWeights-Maya2026/actions/runs/45275333759) at commit `228227f`; its artifact passed independent PE verification and an isolated Maya 2026.2 load/unload/reload smoke test. Interactive behavior remains unverified.
 
 ## Manual module installation
 

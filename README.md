@@ -8,7 +8,7 @@ Thank you!
 
 This repository ports the original tools to Autodesk Maya 2026 on Windows 64-bit while preserving both tools, their algorithms, MEL resources, lazy-loading workflow, MIT license, and original credits.
 
-Current status: the native sources pass Maya 2026 syntax checks and CMake compilation locally. A complete local link is blocked by missing CRT import libraries in the available Build Tools installation; the hosted VS2022 build and Maya 2026 runtime behavior remain unverified. See [MAYA2026_TESTING_CHECKLIST.md](MAYA2026_TESTING_CHECKLIST.md) for the exact status.
+Current status: the hosted VS2022 build passed, the produced `.mll` passed independent x64/export verification, and an isolated Maya 2026.2 load/unload/reload smoke test passed with both tool-command syntaxes available. Interactive painting, UI, numerical comparison, and stress behavior remain unverified. See [MAYA2026_TESTING_CHECKLIST.md](MAYA2026_TESTING_CHECKLIST.md) for the exact status.
 
 ### Build
 

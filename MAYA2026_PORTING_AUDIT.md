@@ -3,13 +3,13 @@
 - **Audit date:** 2026-11-24
 - **Target:** Autodesk Maya 2026, Windows x64
 - **Upstream audited:** `id3a-pipeline/brSmoothWeights` at `bb017e67c2bf7ca03cb626cacfa2ca58b3a66bd8`
-- **Destination:** `leightonayange/brSmoothWeights-Maya2026` (empty repository before this port)
+- **Published destination:** [`254odari/brSmoothWeights-Maya2026`](https://github.com/254odari/brSmoothWeights-Maya2026)
 
 ## 1. Scope and status
 
-This report was produced before implementation changes. The upstream source, headers, MEL scripts, Python installer, module template, documentation, resources, and packaged build-environment archives were inspected. Native API signatures were checked against the installed Maya 2026 headers at `C:/Program Files/Autodesk/Maya2026/include`.
+This report began before implementation changes. Sections 2–11 document the audit findings and resulting design for the upstream source, headers, MEL scripts, Python installer, module template, documentation, resources, and packaged build-environment archives. Sections 12–13 record the implementation and current validation. Native API signatures were checked against the installed Maya 2026 headers at `C:/Program Files/Autodesk/Maya2026/include`.
 
-No Maya 2026 runtime test has been performed. No successful `.mll` link is claimed.
+The hosted VS2022 build, independent PE verification, and isolated Maya 2026.2 load/unload/reload smoke test passed. No interactive UI, painting, numerical-comparison, or stress test has been performed.
 
 ## 2. Repository inventory
 
@@ -169,14 +169,14 @@ No new paid dependency is needed.
 
 ## 8. Build-system gaps and proposed CMake design
 
-The port will add a root `CMakeLists.txt` with these constraints:
+The port adds a root `CMakeLists.txt` with these constraints:
 
 - CMake 3.27.3 or newer.
 - Windows x64 and MSVC only for this target.
-- Explicit `MAYA2026_ROOT` cache input; no guessed install path.
+- Explicit `MAYA_LOCATION` cache input with a Maya 2026 default.
 - Validate required Maya headers and libraries under that root.
 - C++17, `/EHsc`, and the dynamic MSVC runtime (`/MD`) to match Maya.
-- Define `NT_PLUGIN` so `MFnPlugin.h` provides the Windows plug-in exports.
+- Define `NT_PLUGIN` and request the unmangled `initializePlugin`/`uninitializePlugin` linker aliases used by the upstream Windows project.
 - Link `Foundation`, `OpenMaya`, `OpenMayaUI`, `OpenMayaAnim`, `OpenMayaRender`, and `tbb12`.
 - Produce `brSmoothWeights.mll`.
 - Install into `modules/brSmoothWeights/plug-ins/win64/2026` under a chosen prefix.
@@ -191,19 +191,19 @@ Autodesk Platform Services publishes official Maya 2026 Windows DevKit links, in
 
 The package returned HTTP 200, `Content-Type: application/zip`, and `Content-Length: 552487216` on 2026-11-23. It is an Autodesk ADN-hosted package reached from Autodesk's official Maya API page.
 
-The workflow will:
+The workflow:
 
-1. Run on `windows-2022`.
-2. Verify Visual Studio 2022 17.8.3+ with x64 C++ tools.
-3. Download the official DevKit to the runner temporary directory, with a repository-variable override for future Autodesk package updates.
-4. Extract it only on the ephemeral runner.
-5. Locate the SDK root from `include/maya/MFnMesh.h` and validate the required libraries.
-6. Configure with the Visual Studio 17 2022 generator and x64 architecture.
-7. Build Release.
-8. Verify the `.mll` exists, is x64, and exports both plug-in entry points.
-9. Upload only the compiled plugin as a workflow artifact.
+1. Runs on `windows-2022`.
+2. Verifies Visual Studio 2022 17.8.3+ with x64 C++ tools.
+3. Downloads the pinned official DevKit to the runner temporary directory.
+4. Extracts it only on the ephemeral runner.
+5. Locates the SDK root from `include/maya/MFnPlugin.h` and validates the required libraries.
+6. Configures with the Visual Studio 17 2022 generator and x64 architecture.
+7. Builds Release.
+8. Verifies the `.mll` exists, is x64, and exports both plug-in entry points.
+9. Uploads only the compiled plug-in as a workflow artifact.
 
-No Autodesk SDK files or credentials will be committed. The SDK archive will not be uploaded as an artifact. If the official URL becomes unavailable, the maintainer can point `MAYA2026_DEVKIT_URL` to another authorized package or use a Windows self-hosted runner with a locally installed SDK.
+No Autodesk SDK files or credentials will be committed. The SDK archive will not be uploaded as an artifact. If the official URL becomes unavailable, the maintainer can update `MAYA_DEVKIT_URL` in the workflow to another authorized package or use a Windows self-hosted runner with a locally installed SDK.
 
 ## 10. Installation and script findings
 
@@ -211,7 +211,7 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 - Build/install the binary at `modules/brSmoothWeights/plug-ins/win64/2026/brSmoothWeights.mll`.
 - Preserve the original installer-generated module workflow.
 - The installer derives `MODULE_NAME` from the distribution folder name, so the packaged root must remain named `brSmoothWeights`.
-- `dragDropInstaller.py` reads the EULA as bytes and passes it to `cmds.scrollField`, which is incompatible with Python 3 text expectations. Decode the EULA as UTF-8 before display.
+- `dragDropInstaller.py` initially read the EULA as bytes and passed it to `cmds.scrollField`, which is incompatible with Python 3 text expectations. The port reads it as UTF-8 text before display.
 - The uninstall parser uses `line.split(" ")[-1]`, which is fragile for Windows paths containing spaces. This is an installer robustness issue, not a plug-in loading blocker.
 - `userSetup.py` contains no Python-2-only syntax and needs no migration.
 - MEL UI internals, context lifecycle, SVG rendering, influence menus, and in-view messages require Maya 2026 runtime testing.
@@ -231,7 +231,7 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | Baseline import | All tracked upstream files | Imported unchanged from `bb017e67c2bf7ca03cb626cacfa2ca58b3a66bd8`. |
 | Audit | `MAYA2026_PORTING_AUDIT.md` | Added before implementation changes. |
 | Native compatibility | `source/pluginMain.cpp`, `source/smoothWeightsTool.h`, `source/smoothWeightsTool.cpp`, `source/transferWeightsTool.h`, `source/transferWeightsTool.cpp` | Added direct includes, moved private TBB includes, replaced deprecated plug reads, preserved failed-read defaults, registered tool syntax callbacks, added registration rollback and reverse-order deregistration. Numerical algorithms unchanged. |
-| Build system | `CMakeLists.txt` | Added a Windows x64 MSVC target for `brSmoothWeights.mll`, C++17, dynamic MSVC runtime, Maya 2026 SDK discovery, bundled oneTBB linkage, and module-layout install rules. |
+| Build system | `CMakeLists.txt` | Added a Windows x64 MSVC target for `brSmoothWeights.mll`, C++17, dynamic MSVC runtime, Maya 2026 SDK discovery, bundled oneTBB linkage, module-layout install rules, and the upstream unmangled plug-in entry-point export aliases. |
 | CI and binary verification | `.github/workflows/build-maya2026-windows.yml`, `tests/verify_mll.py` | Added a `windows-2022` workflow that verifies VS2022/CMake versions, downloads the pinned official Autodesk DevKit ephemerally, builds and installs the module-layout binary, verifies AMD64 and both plug-in exports, uploads only the `.mll`, and always removes the downloaded SDK. |
 | Packaging and documentation | `resources/module_template.mod`, `dragDropInstaller.py`, `README.md`, `versions.md`, `MAYA2026_INSTALLATION.md`, `MAYA2026_TESTING_CHECKLIST.md` | Added the Maya 2026 Windows module block, UTF-8 EULA decoding for Python 3, build/install/launch instructions, an explicit tested/unverified checklist, and preserved credits/license references. |
 
@@ -247,16 +247,20 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | CMake configure | Passed with CMake 4.4.5, NMake, and MSVC 19.51 using static-library compiler probes; all Maya 2026 headers/libraries were found. Normal compiler probes cannot link locally because the CRT import libraries are missing. |
 | CMake compile | All three translation units compiled successfully; no `.mll` was produced. |
 | CMake link | Blocked locally by missing `msvcprt.lib` in the incomplete VS2026 Build Tools installation. |
-| Workflow YAML and PowerShell parse | Passed locally for the workflow and all five PowerShell script blocks. Hosted runner execution has not been performed. |
-| PE verifier | Passed against the upstream Maya 2025 x64 `.mll`; correctly rejected a non-PE file. The new Maya 2026 binary is not yet available for verification. |
-| Installer Python syntax | Passed locally with Python 3.14; Maya UI execution is not tested. |
-| Module template and documentation links | Passed static checks; Maya module discovery is not tested. |
+| Workflow YAML and PowerShell parse | Passed locally for the workflow and all five PowerShell script blocks; the hosted workflow subsequently executed successfully. |
+| PE verifier | Passed against the upstream Maya 2025 x64 `.mll`, correctly rejected a non-PE file, and independently passed on the hosted Maya 2026 artifact. |
+| Installer Python syntax | Passed locally with Python 3.14; Maya installer UI execution is not tested. |
+| Module template and documentation links | Passed static checks; Maya module discovery and lazy Skin-menu loading are not tested. |
 | Core algorithm comparison | Passed: `performSmooth`, `computeWeights`, smoothing falloff, `performTransfer`, `computeTransfer`, and transfer falloff are byte-for-byte unchanged from upstream. |
 | Official DevKit endpoint | Verified HTTP 200 with `Content-Length: 552487216` for the pinned Autodesk archive. |
 | Final clean CMake configure | Passed with CMake 4.4.5, NMake, and MSVC 19.51 using static-library compiler probes; all required SDK components were found. |
-| GitHub Actions build | Not yet run. |
-| Plug-in load/unload in Maya 2026 | Not tested. |
-| Smoothing/transfer numerical and UI behavior | Not tested. |
+| CMake entry-point export configuration | Passed with CMake 4.4.5, Ninja, and MSVC 19.51; generated link flags include `/export:initializePlugin` and `/export:uninitializePlugin`. |
+| GitHub Actions build | Passed: [run 45275333759](https://github.com/254odari/brSmoothWeights-Maya2026/actions/runs/45275333759) at commit `228227f` built and installed the `.mll` with VS2022 and the official DevKit. |
+| Hosted artifact contents | Passed: the artifact contains only `brSmoothWeights.mll` (143,360 bytes; SHA-256 `f5b2494d3666f80342b2f1839fd9badb12eaaf484b2a7a403b233607e555447d`). |
+| Maya 2026 headless load/unload/reload | Passed in isolated Autodesk Maya 2026.2 `mayapy`: the artifact loaded from the reported path, both tool commands returned valid syntax, and unload/reload/unload succeeded. |
+| Smoothing/transfer numerical, UI, and stress behavior | Not tested; requires interactive Maya 2026 testing. |
+
+The first hosted run, [45272798770](https://github.com/254odari/brSmoothWeights-Maya2026/actions/runs/45272798770), compiled successfully but failed PE verification because the CMake target omitted the upstream Windows entry-point export aliases. Commit `228227f` restored those linker options, and the rerun passed. The original `leightonayange` destination was not writable by the authenticated account, so the verified repository was published under `254odari`.
 
 ## 14. Authoritative references
 
