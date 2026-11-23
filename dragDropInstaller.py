@@ -700,9 +700,8 @@ def showEULA():
 
     layout = cmds.rowColumnLayout()
 
-    fileObj = open(os.path.join(INSTALL_ROOT, "LICENSE"), "rb")
-    fileString = fileObj.read()
-    fileObj.close()
+    with open(os.path.join(INSTALL_ROOT, "LICENSE"), "r", encoding="utf-8") as fileObj:
+        fileString = fileObj.read()
 
     showLogo()
 

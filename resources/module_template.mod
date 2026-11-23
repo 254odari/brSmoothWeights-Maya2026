@@ -123,3 +123,8 @@ plug-ins: plug-ins/win64/2024
 plug-ins: plug-ins/win64/2025
 [r] icons: icons
 [r] scripts: scripts
+
++ MAYAVERSION:2026 PLATFORM:win64 MODULE_NAME any PATH_TO_MODULE_CONTENT
+plug-ins: plug-ins/win64/2026
+[r] icons: icons
+[r] scripts: scripts
