@@ -1,0 +1,133 @@
+name: Build Maya 2026 Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-maya2026-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      MAYA_DEVKIT_URL: https://autodesk-adn-transfer.s3.us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2026/Autodesk_Maya_2026_3_Update_DEVKIT_Windows.zip
+      MAYA_DEVKIT_ARCHIVE: Autodesk_Maya_2026_3_Update_DEVKIT_Windows.zip
+      MAYA_DEVKIT_EXPECTED_BYTES: "552487216"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify Windows build tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path -LiteralPath $vswhere)) {
+              throw 'vswhere.exe is not available on the runner.'
+          }
+
+          $installationVersion = & $vswhere -latest -version '[17.8,18.0)' -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationVersion
+          if (-not $installationVersion) {
+              throw 'Visual Studio 2022 Build Tools with the x64 C++ workload were not found.'
+          }
+          $vsVersion = [version]($installationVersion | Select-Object -First 1)
+          if ($vsVersion -lt [version]'17.8.3') {
+              throw "Maya 2026 requires Visual Studio 2022 17.8.3 or newer; found $vsVersion."
+          }
+
+          $cmakeVersionText = (cmake --version | Select-Object -First 1) -replace '^cmake version\s+', ''
+          $cmakeVersion = [version]$cmakeVersionText
+          if ($cmakeVersion -lt [version]'3.27.3') {
+              throw "CMake 3.27.3 or newer is required; found $cmakeVersion."
+          }
+
+          "Visual Studio 2022: $vsVersion" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "CMake: $cmakeVersion" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Download official Maya 2026 DevKit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $archive = Join-Path $env:RUNNER_TEMP $env:MAYA_DEVKIT_ARCHIVE
+          $extractRoot = Join-Path $env:RUNNER_TEMP 'maya2026-devkit'
+          New-Item -ItemType Directory -Force -Path $extractRoot | Out-Null
+
+          Invoke-WebRequest -Uri $env:MAYA_DEVKIT_URL -OutFile $archive -MaximumRetryCount 3 -RetryIntervalSec 10 -TimeoutSec 1800
+          $actualBytes = (Get-Item -LiteralPath $archive).Length
+          if ($actualBytes -ne [long]$env:MAYA_DEVKIT_EXPECTED_BYTES) {
+              throw "The official DevKit download has an unexpected size: $actualBytes bytes."
+          }
+
+          Expand-Archive -LiteralPath $archive -DestinationPath $extractRoot -Force
+          $candidates = @(Get-Item -LiteralPath $extractRoot) + @(Get-ChildItem -LiteralPath $extractRoot -Directory)
+          $devkitRoot = $candidates | Where-Object {
+              (Test-Path -LiteralPath (Join-Path $_.FullName 'include\maya\MFnPlugin.h')) -and
+              (Test-Path -LiteralPath (Join-Path $_.FullName 'lib\OpenMaya.lib'))
+          } | Select-Object -First 1
+
+          if ($null -eq $devkitRoot) {
+              throw 'The extracted DevKit does not contain the expected Maya 2026 headers and import libraries.'
+          }
+          "MAYA_LOCATION=$($devkitRoot.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "Maya 2026 DevKit: $($devkitRoot.FullName)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Configure and build plug-in
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cmake -S . -B build -G 'Visual Studio 17 2022' -A x64 "-DMAYA_LOCATION=$env:MAYA_LOCATION"
+          if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
+
+          cmake --build build --config Release --parallel
+          if ($LASTEXITCODE -ne 0) { throw 'CMake build failed.' }
+
+          cmake --install build --config Release --prefix "$env:RUNNER_TEMP/package"
+          if ($LASTEXITCODE -ne 0) { throw 'CMake install failed.' }
+
+      - name: Verify and stage plug-in
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $builtMll = Join-Path $env:RUNNER_TEMP 'package\plug-ins\win64\2026\brSmoothWeights.mll'
+          if (-not (Test-Path -LiteralPath $builtMll)) {
+              throw "The build did not produce $builtMll."
+          }
+
+          python tests/verify_mll.py $builtMll
+          if ($LASTEXITCODE -ne 0) { throw 'Plug-in PE verification failed.' }
+
+          $artifactDirectory = Join-Path $env:RUNNER_TEMP 'brSmoothWeights-Maya2026-win64'
+          New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
+          Copy-Item -LiteralPath $builtMll -Destination (Join-Path $artifactDirectory 'brSmoothWeights.mll')
+
+      - name: Upload verified plug-in
+        uses: actions/upload-artifact@v4
+        with:
+          name: brSmoothWeights-Maya2026-win64
+          path: ${{ runner.temp }}/brSmoothWeights-Maya2026-win64/brSmoothWeights.mll
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove downloaded DevKit
+        if: always()
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP $env:MAYA_DEVKIT_ARCHIVE
+          $extractRoot = Join-Path $env:RUNNER_TEMP 'maya2026-devkit'
+          foreach ($path in @($archive, $extractRoot)) {
+              if (Test-Path -LiteralPath $path) {
+                  Remove-Item -LiteralPath $path -Recurse -Force
+              }
+          }

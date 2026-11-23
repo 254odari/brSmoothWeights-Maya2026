@@ -232,6 +232,7 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | Audit | `MAYA2026_PORTING_AUDIT.md` | Added before implementation changes. |
 | Native compatibility | `source/pluginMain.cpp`, `source/smoothWeightsTool.h`, `source/smoothWeightsTool.cpp`, `source/transferWeightsTool.h`, `source/transferWeightsTool.cpp` | Added direct includes, moved private TBB includes, replaced deprecated plug reads, preserved failed-read defaults, registered tool syntax callbacks, added registration rollback and reverse-order deregistration. Numerical algorithms unchanged. |
 | Build system | `CMakeLists.txt` | Added a Windows x64 MSVC target for `brSmoothWeights.mll`, C++17, dynamic MSVC runtime, Maya 2026 SDK discovery, bundled oneTBB linkage, and module-layout install rules. |
+| CI and binary verification | `.github/workflows/build-maya2026-windows.yml`, `tests/verify_mll.py` | Added a `windows-2022` workflow that verifies VS2022/CMake versions, downloads the pinned official Autodesk DevKit ephemerally, builds and installs the module-layout binary, verifies AMD64 and both plug-in exports, uploads only the `.mll`, and always removes the downloaded SDK. |
 
 ## 13. Validation status
 
@@ -245,6 +246,8 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | CMake configure | Passed with CMake 4.4.5, NMake, and MSVC 19.51 using static-library compiler probes; all Maya 2026 headers/libraries were found. Normal compiler probes cannot link locally because the CRT import libraries are missing. |
 | CMake compile | All three translation units compiled successfully; no `.mll` was produced. |
 | CMake link | Blocked locally by missing `msvcprt.lib` in the incomplete VS2026 Build Tools installation. |
+| Workflow YAML parse | Passed locally. Hosted runner execution has not been performed. |
+| PE verifier | Passed against the upstream Maya 2025 x64 `.mll`; correctly rejected a non-PE file. The new Maya 2026 binary is not yet available for verification. |
 | GitHub Actions build | Not yet run. |
 | Plug-in load/unload in Maya 2026 | Not tested. |
 | Smoothing/transfer numerical and UI behavior | Not tested. |
