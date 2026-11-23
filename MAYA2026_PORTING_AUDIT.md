@@ -1,9 +1,9 @@
 # Maya 2026 Porting Audit
 
-**Audit date:** 2026-11-24  
-**Target:** Autodesk Maya 2026, Windows x64  
-**Upstream audited:** `id3a-pipeline/brSmoothWeights` at `bb017e67c2bf7ca03cb626cacfa2ca58b3a66bd8`  
-**Destination:** `leightonayange/brSmoothWeights-Maya2026` (empty repository before this port)
+- **Audit date:** 2026-11-24
+- **Target:** Autodesk Maya 2026, Windows x64
+- **Upstream audited:** `id3a-pipeline/brSmoothWeights` at `bb017e67c2bf7ca03cb626cacfa2ca58b3a66bd8`
+- **Destination:** `leightonayange/brSmoothWeights-Maya2026` (empty repository before this port)
 
 ## 1. Scope and status
 
@@ -247,10 +247,13 @@ No Autodesk SDK files or credentials will be committed. The SDK archive will not
 | CMake configure | Passed with CMake 4.4.5, NMake, and MSVC 19.51 using static-library compiler probes; all Maya 2026 headers/libraries were found. Normal compiler probes cannot link locally because the CRT import libraries are missing. |
 | CMake compile | All three translation units compiled successfully; no `.mll` was produced. |
 | CMake link | Blocked locally by missing `msvcprt.lib` in the incomplete VS2026 Build Tools installation. |
-| Workflow YAML parse | Passed locally. Hosted runner execution has not been performed. |
+| Workflow YAML and PowerShell parse | Passed locally for the workflow and all five PowerShell script blocks. Hosted runner execution has not been performed. |
 | PE verifier | Passed against the upstream Maya 2025 x64 `.mll`; correctly rejected a non-PE file. The new Maya 2026 binary is not yet available for verification. |
 | Installer Python syntax | Passed locally with Python 3.14; Maya UI execution is not tested. |
 | Module template and documentation links | Passed static checks; Maya module discovery is not tested. |
+| Core algorithm comparison | Passed: `performSmooth`, `computeWeights`, smoothing falloff, `performTransfer`, `computeTransfer`, and transfer falloff are byte-for-byte unchanged from upstream. |
+| Official DevKit endpoint | Verified HTTP 200 with `Content-Length: 552487216` for the pinned Autodesk archive. |
+| Final clean CMake configure | Passed with CMake 4.4.5, NMake, and MSVC 19.51 using static-library compiler probes; all required SDK components were found. |
 | GitHub Actions build | Not yet run. |
 | Plug-in load/unload in Maya 2026 | Not tested. |
 | Smoothing/transfer numerical and UI behavior | Not tested. |
