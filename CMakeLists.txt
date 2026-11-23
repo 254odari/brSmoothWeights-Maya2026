@@ -107,6 +107,11 @@ target_link_libraries(brSmoothWeights PRIVATE
     "${MAYA_TBB_LIBRARY}"
 )
 
+target_link_options(brSmoothWeights PRIVATE
+    /export:initializePlugin
+    /export:uninitializePlugin
+)
+
 set_target_properties(brSmoothWeights PROPERTIES
     OUTPUT_NAME brSmoothWeights
     PREFIX ""
